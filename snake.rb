@@ -19,9 +19,11 @@ class Snake
   #in order for the key down event to be registered in direction we need to have a attr writer to update it
   attr_writer :direction
 
+  # if @growing = true then it would grow each time the frame is loaded (10 times per second for example)
  def initialize
   @positions = [[2, 0], [2, 1], [2, 2], [2, 3]]
   @direction = "down"
+  @growing = false
  end
 
  # draw is a square for each position (body of snake). each square is size of grid
@@ -34,20 +36,25 @@ class Snake
     end
   end
 
-  #
+  # only remove the last element of the snake if we are not growing
   def move
-    @positions.shift
+    if !@growing
+      @positions.shift
+    end
+
     case @direction
       when "down"
-        #.shift removes the first element of an array, so from def initialize the [2, 0]. we want to remove that position and add a new positon at the other end of the snake to make it appear as if it s moving
-        @positions.push([head[0], head[1] + 1])
+        #.shift removes the first element of an array, so from def initialize the [2, 0]. we want to remove that position and add a new positon at the other end of the snake to make it appear as if it s moving. adding new element to array.
+        # new coords method was added later. remember: % (=modulo operator) gives remaining after its been divided. so 33 % 31 = 1. meaning that the x axis 33 --> 1 (note: 24 % 32  is 24. 24 divided by 32 is 0 with a remainder of 24)
+        @positions.push(new_coords(head[0], head[1] + 1))
       when "up"
-        @positions.push([head[0], head[1] - 1])
+        @positions.push(new_coords(head[0], head[1] - 1))
       when "left"
-        @positions.push([head[0] - 1, head[1]])
+        @positions.push(new_coords(head[0] - 1, head[1]))
       when "right"
-        @positions.push([head[0] + 1, head[1]])
+        @positions.push(new_coords(head[0] + 1, head[1]))
     end
+    @growing = false
   end
 
   #for they key down event if statement  - if direction (current and new_direction (new)
@@ -60,26 +67,104 @@ class Snake
     end
   end
 
+  #x and y are needed for our snake_hit_ball method
+  def x
+    head[0]
+  end
+
+  def y
+    head[1]
+  end
+
+  def grow
+    @growing = true
+  end
+
+  def hit_itself?
+   if @positins.uniq.length != @positions.length
+  end
+
   private
+
+  def text_message
+    if finished?
+      "Game Over but you got to Level #{@score}. Press '1' to restart"
+    else
+      "Level: #{@score}"
+    end
+  end
 
   # for when we want to call the head of the snake
   def head
     @positions.last
   end
+
+  def new_coords(x,y)
+    [x % GRID_WIDTH, y % GRID_HEIGHT]
+  end
 end
 
-def new_coords(x,y)
-  [x % ]
-end
 
+
+
+class Game
+  def initialize
+    @score = 0
+    @ball_x = rand(GRID_WIDTH)
+    @ball_y = rand(GRID_HEIGHT)
+    @finished = false
+  end
+
+  # note we dont need to create the class for square nor for text - these are inbuilt
+  def draw
+    unless finished?
+      Square.new(x: @ball_x * GRID_SIZE, y: @ball_y * GRID_SIZE, size: GRID_SIZE, color: "orange")
+    end
+    Text.new(text_message, color: "green", x: 5, y: 2, size: 30)
+  end
+
+  def snake_hit_ball?(x, y)
+    @ball_x == x && @ball_y == y
+  end
+
+
+
+  def record_hit
+    @score += 1
+    @ball_x = rand(GRID_WIDTH)
+    @ball_y = rand(GRID_HEIGHT)
+  end
+
+  def finish
+    # the following puts only shows in the terminal, not on the game. way to test if finished=true will work
+    puts "game over"
+    @finished = true
+  end
+
+  def finished?
+    @finished
+  end
+end
 snake = Snake.new
-
+game = Game.new
 # each frame (= each second due to fps_cap 1) is an update, so this happens every second: clear, move, draw...)
 update do
   # clear each time screen is refreshed/new frame, else we draw our snake on top of the existing snake
   clear
-  snake.move
+  unless game.finished?
+    snake.move
+  end
   snake.draw
+  game.draw
+
+  if game.snake_hit_ball?(snake.x, snake.y)
+    game.record_hit
+    snake.grow
+  end
+
+  if snake.hit_itself?
+    game.finish
+  end
 end
 
 on :key_down do |event|
@@ -87,6 +172,9 @@ on :key_down do |event|
     if snake.snake_can_change_direction_to?(event.key)
       snake.direction = event.key
     end
+  elsif event.key == 1
+    snake = Snake.new
+    game = Game.new
   end
 end
 
