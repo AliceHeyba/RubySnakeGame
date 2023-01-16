@@ -6,8 +6,12 @@ set background: "navy"
 set fps_cap: 10
 
 #window width is 640 by default --> grid size 20 x 32 times
-# window height is 480
+# window height is 480 --> grid size 20 x24
 GRID_SIZE = 20
+#make the snake reappear on the frame when it goes beyond what we see
+# our window is 32 grids wide and 24 grids high
+GRID_WIDTH = Window.width / GRID_SIZE
+GRID_HEIGHT = Window.height / GRID_SIZE
 
 # position first number in position array is first number x axis (horizontal), 2nd number y axis (vertical)
 
@@ -62,6 +66,10 @@ class Snake
   def head
     @positions.last
   end
+end
+
+def new_coords(x,y)
+  [x % ]
 end
 
 snake = Snake.new
